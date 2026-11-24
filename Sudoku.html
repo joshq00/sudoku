@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sudoku</title>
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--mut:#6b6b6b;--line:#c9c9c9;--bold:#1a1a1a;--cell:#fff;--sel:#bcd7fb;--peer:#e8f0fb;--same:#cfe0f7;--given:#1a1a1a;--user:#2a5fc9;--err:#d6322b;--errbg:#fbdcda;--hint:#fff2b8;--btn:#f1f1f1;--acc:#1a1a1a;--accfg:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161618;--fg:#ececec;--mut:#9a9a9a;--line:#444;--bold:#ececec;--cell:#1e1e21;--sel:#2c4a7a;--peer:#25282e;--same:#2f3b52;--given:#ececec;--user:#7fb0ff;--err:#ff6b63;--errbg:#4a2523;--hint:#4a4220;--btn:#2a2a2d;--acc:#ececec;--accfg:#161618}}
+:root[data-theme="dark"]{--bg:#161618;--fg:#ececec;--mut:#9a9a9a;--line:#444;--bold:#ececec;--cell:#1e1e21;--sel:#2c4a7a;--peer:#25282e;--same:#2f3b52;--given:#ececec;--user:#7fb0ff;--err:#ff6b63;--errbg:#4a2523;--hint:#4a4220;--btn:#2a2a2d;--acc:#ececec;--accfg:#161618}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:Georgia,"Times New Roman",serif;min-height:100%;display:flex;justify-content:center}
+.app{width:100%;max-width:520px;padding:16px;display:flex;flex-direction:column;gap:12px}
+h1{margin:0;font-size:26px;letter-spacing:-.5px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.seg{display:flex;background:var(--btn);border-radius:999px;padding:3px;gap:2px}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:var(--btn);border-radius:999px;padding:8px 14px;font-size:14px;font-family:system-ui,sans-serif}
+.seg button{background:none;padding:6px 14px}.seg button.on{background:var(--acc);color:var(--accfg)}
+.meta{display:flex;justify-content:space-between;font:14px system-ui,sans-serif;color:var(--mut)}
+#board{display:grid;grid-template-columns:repeat(9,1fr);border:2px solid var(--bold);width:100%;aspect-ratio:1;background:var(--cell);user-select:none;touch-action:manipulation}
+.c{position:relative;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:clamp(20px,6.4vw,32px);cursor:pointer;font-family:system-ui,sans-serif}
+.c:nth-child(9n+3),.c:nth-child(9n+6){border-right:2px solid var(--bold)}
+.c:nth-child(n+19):nth-child(-n+27),.c:nth-child(n+46):nth-child(-n+54){border-bottom:2px solid var(--bold)}
+.c.p{background:var(--peer)}.c.s2{background:var(--same)}.c.hl{background:var(--hint)}.c.sel{background:var(--sel)}
+.c.g{color:var(--given);font-weight:600}.c.u{color:var(--user)}.c.bad{color:var(--err);background:var(--errbg)}
+.n{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);font-size:clamp(8px,2.4vw,12px);color:var(--mut);text-align:center;line-height:1;pointer-events:none}
+.n span{display:flex;align-items:center;justify-content:center}.n .m{color:var(--user);font-weight:700}
+#msg{min-height:20px;font:14px system-ui,sans-serif;color:var(--mut);text-align:center}
+.tools{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.tools button{border-radius:12px;padding:10px 2px;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tools button.on{background:var(--acc);color:var(--accfg)}.tools b{font-size:18px;font-weight:400}
+#pad{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}
+#pad button{border-radius:10px;font-size:clamp(20px,6vw,28px);padding:8px 0;position:relative;font-family:Georgia,serif}
+#pad button.done{opacity:.25;pointer-events:none}
+.opts{display:flex;gap:16px;justify-content:center;font:13px system-ui,sans-serif;color:var(--mut);flex-wrap:wrap}
+.opts label{display:flex;gap:6px;align-items:center;cursor:pointer}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px}
+#ov.show{display:flex}
+.card{background:var(--bg);border-radius:16px;padding:28px;text-align:center;max-width:340px;width:100%;display:flex;flex-direction:column;gap:12px}
+.card h2{margin:0;font-size:28px}.card p{margin:0;color:var(--mut);font-family:system-ui,sans-serif}
+.card button.pri{background:var(--acc);color:var(--accfg);padding:12px}
+.c.hp{background:var(--hint)}.c.ht{background:color-mix(in srgb,var(--err) 30%,var(--cell))}.c.ht .n .m{color:var(--err)}
+.pause .c{color:transparent!important}.pause .n{visibility:hidden}
+/* colour-blind friendly: shape + luminance cues, not just hue */
+:root{--peer:#dedede;--same:#ffe08a;--sel:#cfe1ff;--ring:#0b4fb3;--hint:#ffd54a;--tgt:#d4572a;--err:#b3261e;--errbg:#ffe0da;--user:#0b4fb3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--peer:#34343a;--same:#6b5a14;--sel:#31456e;--ring:#9cc2ff;--hint:#7a6414;--tgt:#ff8a5c;--err:#ff8a7a;--errbg:#3a2220;--user:#9cc2ff}}
+:root[data-theme="dark"]{--peer:#34343a;--same:#6b5a14;--sel:#31456e;--ring:#9cc2ff;--hint:#7a6414;--tgt:#ff8a5c;--err:#ff8a7a;--errbg:#3a2220;--user:#9cc2ff}
+.tools{grid-template-columns:repeat(6,1fr)}.tools button{font-size:12px}
+.c.hp{background:var(--hint);box-shadow:inset 0 0 0 2px var(--fg)}
+.c.ht{background:repeating-linear-gradient(45deg,var(--cell) 0 5px,var(--tgt) 5px 8px)}
+.c.sel{box-shadow:inset 0 0 0 3px var(--ring)}
+.c.bad{background:var(--errbg);font-weight:700;text-decoration:underline wavy var(--err);text-decoration-thickness:2px}
+.c.fl{outline:3px dashed var(--fg);outline-offset:-3px;z-index:2}
+.n span{border-radius:50%}
+.n .m{background:var(--fg);color:var(--bg);font-weight:700}
+.c.ht .n .m{color:var(--bg)}
+.n .x{text-decoration:line-through;font-weight:700;color:var(--fg);outline:1.5px solid var(--fg);outline-offset:-1px}
+.n .f{outline:2px solid var(--fg);outline-offset:-1px;font-weight:700}
+#msg{height:56px;overflow:auto;display:flex;align-items:center;justify-content:center;line-height:1.3}
+.tools button{white-space:nowrap;min-width:0;height:56px;justify-content:center}
+/* back to the original, softer palette */
+:root{--peer:#e8f0fb;--same:#cfe0f7;--sel:#bcd7fb;--hint:#fff2b8;--tgt:#d6322b;--err:#d6322b;--errbg:#fbdcda;--user:#2a5fc9}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--peer:#25282e;--same:#2f3b52;--sel:#2c4a7a;--hint:#4a4220;--tgt:#ff6b63;--err:#ff6b63;--errbg:#4a2523;--user:#7fb0ff}}
+:root[data-theme="dark"]{--peer:#25282e;--same:#2f3b52;--sel:#2c4a7a;--hint:#4a4220;--tgt:#ff6b63;--err:#ff6b63;--errbg:#4a2523;--user:#7fb0ff}
+.c.hp{background:var(--hint);box-shadow:none}
+.c.ht{background:color-mix(in srgb,var(--tgt) 30%,var(--cell))}
+.c.sel{box-shadow:none}
+.c.bad{background:var(--errbg);text-decoration:none;font-weight:400}.c.bad.g{font-weight:600}
+.c.fl{outline:2px dashed var(--user);outline-offset:-2px}
+.n span{border-radius:0}
+.n .m{background:none;color:var(--user);font-weight:700}
+.c.ht .n .m{color:var(--user)}
+.n .x{text-decoration:line-through;color:var(--err);font-weight:700;outline:none}
+.n .f{outline:none;color:var(--user);font-weight:700}
+#msg{height:auto;min-height:92px;overflow:visible;font-size:13px}
+#board.notint .n .m,#board.notint .c.ht .n .m{background:none}
+/* mobile polish */
+html{-webkit-text-size-adjust:100%}body{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#pz{min-height:32px;padding:6px 12px!important}.opts label{padding:8px 4px}
+@media (max-width:420px){.app{padding:10px}}
+.n .m,.c.ht .n .m{background:color-mix(in srgb,var(--user) 14%,transparent);color:var(--user);font-weight:700;border-radius:3px}
+</style></head><body>
+<div class="app">
+ <div class="top"><h1>Sudoku</h1>
+  <div class="seg" id="diff"><button data-d="easy">Easy</button><button data-d="medium" class="on">Medium</button><button data-d="hard">Hard</button></div></div>
+ <div class="meta"><span id="dl">Medium</span><span id="mist">Mistakes: 0</span><span><span id="tm">0:00</span> <button id="pz" style="padding:2px 10px;font-size:12px">Pause</button></span></div>
+ <div id="board"></div>
+ <div id="msg"></div>
+ <div class="tools">
+  <button id="undo"><b>↶</b>Undo</button>
+  <button id="redo"><b>↷</b>Redo</button>
+  <button id="erase"><b>⌫</b>Erase</button>
+  <button id="note"><b>✎</b>Notes</button>
+  <button id="auto" title="Fill every empty cell with its possible candidates"><b>▦</b>Auto</button>
+  <button id="hint"><b>?</b>Hint <span id="hc"></span></button>
+ </div>
+ <div class="tools" style="grid-template-columns:repeat(2,1fr)">
+  <button id="trim" style="flex-direction:row;justify-content:center;gap:8px" title="Remove notes that can no longer be right">✂ Trim notes</button>
+  <button id="new" style="flex-direction:row;justify-content:center;gap:8px">↻ New game</button>
+ </div>
+ <div id="pad"></div>
+ <div class="opts">
+  <label><input type="checkbox" id="oErr" checked> Show errors</label>
+  <label><input type="checkbox" id="oClean" checked> Auto-clean notes</label>
+  <label><input type="checkbox" id="oPeer" checked> Highlight row/column/box</label>
+  <label><input type="checkbox" id="oTint" checked> Highlight matching notes</label>
+ </div>
+</div>
+<div id="ov"><div class="card"><h2>Solved!</h2><p id="ovt"></p><button class="pri" id="ovn">Play again</button><button id="ovc">Close</button></div></div>
+<script>
+const $=s=>document.querySelector(s);
+const pc=m=>{let n=0;while(m){m&=m-1;n++}return n};
+const P=[],U=[];
+for(let i=0;i<81;i++){const r=i/9|0,c=i%9,s=new Set(),br=r-r%3,bc=c-c%3;
+ for(let k=0;k<9;k++){s.add(r*9+k);s.add(k*9+c)}
+ for(let a=0;a<3;a++)for(let b=0;b<3;b++)s.add((br+a)*9+bc+b);
+ s.delete(i);P.push([...s])}
+const UR=[],UC=[],UB=[];
+for(let k=0;k<9;k++){const r=[],c=[],b=[];for(let j=0;j<9;j++){r.push(k*9+j);c.push(j*9+k);b.push(((k/3|0)*3+(j/3|0))*9+(k%3)*3+j%3)}UR.push(r);UC.push(c);UB.push(b)}U.push(...UR,...UC,...UB);
+const cand=(g,i)=>{let m=0;for(const p of P[i])if(g[p])m|=1<<g[p];return 0x3FE&~m};
+const shuf=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+function pick(g){let b=-1,bm=0,bn=10;for(let i=0;i<81;i++)if(!g[i]){const m=cand(g,i),n=pc(m);if(n<bn){bn=n;b=i;bm=m;if(n<2)break}}return[b,bm]}
+function count(g,lim){const[b,m]=pick(g);if(b<0)return 1;let t=0;
+ for(let v=1;v<10;v++)if(m>>v&1){g[b]=v;t+=count(g,lim-t);g[b]=0;if(t>=lim)break}return t}
+function fill(g){const[b,m]=pick(g);if(b<0)return true;
+ for(const v of shuf([1,2,3,4,5,6,7,8,9]))if(m>>v&1){g[b]=v;if(fill(g))return true;g[b]=0}return false}
+const combos=(a,k,s=0,c=[],o=[])=>{if(c.length===k){o.push(c.slice());return o}for(let i=s;i<a.length;i++){c.push(a[i]);combos(a,k,i+1,c,o);c.pop()}return o};
+// Human-style logic solver. Returns [hardest level used, # of level-3 steps], or [0,0] if it gets stuck.
+// L1 singles | L2 locked candidates, pairs | L3 triples, X-Wing, Swordfish, XY-Wing
+function grade(g,max){
+ const V=g.slice(),C=V.map((v,i)=>v?0:cand(V,i));let top=1,n3=0,fl=-1,left=V.filter(v=>!v).length;
+ const place=(i,v)=>{V[i]=v;C[i]=0;left--;for(const p of P[i])C[p]&=~(1<<v)};
+ const el=(i,m)=>{if(C[i]&m){C[i]&=~m;return true}return false};
+ const t1=()=>{let ch=false;
+  for(let i=0;i<81;i++)if(!V[i]&&pc(C[i])===1){place(i,31-Math.clz32(C[i]));ch=true}
+  if(ch)return true;
+  for(const u of U)for(let v=1;v<10;v++){if(u.some(i=>V[i]===v))continue;const s=u.filter(i=>C[i]>>v&1);if(s.length===1){place(s[0],v);return true}}
+  return false};
+ const t2=()=>{let ch=false;
+  for(let a=0;a<18;a++)for(let b=18;b<27;b++){const x=U[a].filter(i=>U[b].includes(i));if(x.length!==3)continue;
+   const ra=U[a].filter(i=>!x.includes(i)),rb=U[b].filter(i=>!x.includes(i));
+   for(let v=1;v<10;v++){const m=1<<v,inX=x.some(i=>C[i]&m),inA=ra.some(i=>C[i]&m),inB=rb.some(i=>C[i]&m);
+    if(inX&&!inA&&inB)for(const i of rb)ch=el(i,m)||ch;
+    if(inX&&!inB&&inA)for(const i of ra)ch=el(i,m)||ch}}
+  return ch};
+ const nk=k=>{let ch=false;for(const u of U){const e=u.filter(i=>!V[i]&&pc(C[i])<=k&&C[i]);
+  if(e.length<k)continue;for(const cb of combos(e,k)){let m=0;for(const i of cb)m|=C[i];if(pc(m)===k)for(const i of u)if(!V[i]&&!cb.includes(i))ch=el(i,m)||ch}}return ch};
+ const hd=k=>{let ch=false;for(const u of U){const ds=[];for(let v=1;v<10;v++)if(!u.some(i=>V[i]===v))ds.push(v);
+  for(const cb of combos(ds,k)){let dm=0;for(const v of cb)dm|=1<<v;const cs=u.filter(i=>C[i]&dm);
+   if(cs.length===k&&cb.every(v=>cs.some(i=>C[i]>>v&1)))for(const i of cs)ch=el(i,~dm&0x3FE)||ch}}return ch};
+ const fish=k=>{let ch=false;for(let v=1;v<10;v++){const m=1<<v;
+  for(const o of [0,1]){const base=[];
+   for(let r=0;r<9;r++){const cs=[];for(let c=0;c<9;c++){const i=o?c*9+r:r*9+c;if(C[i]&m)cs.push(c)}if(cs.length>=2&&cs.length<=k)base.push([r,cs])}
+   for(const cb of combos(base,k)){const cov=new Set(cb.flatMap(x=>x[1]));if(cov.size!==k)continue;
+    const rs=cb.map(x=>x[0]);for(const c of cov)for(let r=0;r<9;r++)if(!rs.includes(r))ch=el(o?c*9+r:r*9+c,m)||ch}}}return ch};
+ const xy=()=>{let ch=false;for(let p=0;p<81;p++){if(pc(C[p])!==2)continue;const pm=C[p],ws=P[p].filter(i=>pc(C[i])===2);
+  for(const a of ws)for(const b of ws){if(a>=b)continue;const ca=C[a],cb=C[b];
+   if(pc(ca&pm)!==1||pc(cb&pm)!==1||(ca&pm)===(cb&pm))continue;
+   const sh=ca&cb&~pm;if(pc(sh)!==1)continue;
+   for(const i of P[a])if(i!==p&&i!==b&&P[b].includes(i))ch=el(i,sh)||ch}}return ch};
+ const T=[[1,t1],[2,t2],[2,()=>nk(2)],[2,()=>hd(2)],[3,()=>nk(3)],[3,()=>hd(3)],[3,()=>fish(2)],[3,xy],[3,()=>fish(3)]].filter(x=>x[0]<=max);
+ while(left>0){let ok=false;for(const[l,f]of T){const L0=left;if(f()){ok=true;if(l>top)top=l;if(l===3){n3++;if(fl<0)fl=L0}break}}if(!ok)return[0,0,0]}
+ return[top,n3,fl]}
+// Puzzles are only kept if the logic solver (and so a human) can solve them without guessing,
+// and the requested level is the hardest technique needed. Logic-solvable => unique solution.
+function generate(d){
+ const want={easy:1,medium:2,hard:3}[d],floor={easy:38,medium:28,hard:0}[d];
+ let best=null,bs=-1e9;const t0=Date.now();
+ for(let a=0;a<(d==='hard'?400:14);a++){
+  const sol=Array(81).fill(0);fill(sol);const g=sol.slice();let n=81;
+  for(const i of shuf([...Array(81).keys()])){if(n<=floor)break;const v=g[i];g[i]=0;
+   if(grade(g,want)[0]===0)g[i]=v;else n--}
+  const r=grade(g,want),sc=(r[0]===want?1000:0)+(d==='hard'?r[2]+8*r[1]:0)-n;
+  if(sc>bs){bs=sc;best={sol,puz:g}}
+  if(d!=='hard'&&r[0]===want)break;
+  if(d==='hard'&&r[0]===3&&r[2]>=44&&r[1]>=2)break;
+  if(Date.now()-t0>(d==='hard'?4500:2500))break}
+ return best}
+
+let S={}, diff='medium', sel=-1, noteMode=false, HX=null, tick=null, paused=false;
+Object.defineProperty(window,'hintI',{get(){return HX?HX.i:-1},set(v){if(v<0)HX=null}});
+const board=$('#board'),cells=[];
+for(let i=0;i<81;i++){const d=document.createElement('div');d.className='c';d.onclick=()=>{if(!S.vals)return;sel=i;hintI=-1;render()};board.appendChild(d);cells.push(d)}
+const pad=$('#pad');
+for(let v=1;v<=9;v++){const b=document.createElement('button');b.textContent=v;b.dataset.v=v;b.onclick=()=>input(v);pad.appendChild(b)}
+
+function newGame(){
+ clearInterval(tick);$('#ov').classList.remove('show');
+ msg('Generating a '+diff+' puzzle…');board.style.opacity=.4;
+ setTimeout(()=>{const g=generate(diff);board.style.opacity=1;start(g)},30)}
+function start({sol,puz}){
+ S={sol,given:puz.map(v=>v>0),vals:puz.slice(),notes:Array(81).fill(0),elim:Array(81).fill(0),redo:[],hist:[],mist:0,hints:0,t:0,done:false};
+ sel=puz.findIndex(v=>!v);hintI=-1;paused=false;board.classList.remove('pause');$('#pz').textContent='Pause';
+ $('#dl').textContent=diff[0].toUpperCase()+diff.slice(1);$('#ov').classList.remove('show');msg('');
+ clearInterval(tick);tick=setInterval(()=>{if(!paused&&!S.done){S.t++;time()}},1000);time();render()}
+function time(){const t=S.t;$('#tm').textContent=(t/60|0)+':'+String(t%60).padStart(2,'0')}
+function msg(t){$('#msg').textContent=t}
+function snap(){S.hist.push({v:S.vals.slice(),n:S.notes.slice(),e:S.elim.slice()});if(S.hist.length>200)S.hist.shift();S.redo=[];FL={}}
+
+function input(v){
+ if(S.done||paused||sel<0||S.given[sel])return;
+ hintI=-1;msg('');
+ if(noteMode){if(S.vals[sel])return;snap();S.notes[sel]^=1<<v}
+ else{
+  snap();
+  if(S.vals[sel]===v){S.vals[sel]=0}
+  else{S.vals[sel]=v;S.notes[sel]=0;
+   if(v!==S.sol[sel])S.mist++;
+   if($('#oClean').checked)for(const p of P[sel])S.notes[p]&=~(1<<v)}}
+ render();check()}
+function erase(){if(S.done||paused||sel<0||S.given[sel])return;if(!S.vals[sel]&&!S.notes[sel])return;snap();S.vals[sel]=0;S.notes[sel]=0;render()}
+function check(){if(S.vals.every((v,i)=>v===S.sol[i])){S.done=true;clearInterval(tick);
+ $('#ovt').textContent=`${diff[0].toUpperCase()+diff.slice(1)} in ${$('#tm').textContent} with ${S.mist} mistake${S.mist==1?'':'s'} and ${S.hints} hint${S.hints==1?'':'s'}.`;
+ setTimeout(()=>$('#ov').classList.add('show'),350)}}
+
+function conflict(i){const v=S.vals[i];return v&&P[i].some(p=>S.vals[p]===v)}
+function wrong(i){return S.vals[i]&&!S.given[i]&&S.vals[i]!==S.sol[i]}
+
+function render(){
+ const sv=sel>=0?S.vals[sel]:0,showErr=$('#oErr').checked;
+ const gh={};if(HX&&HX.elims)for(const[i,m]of HX.elims)gh[i]=(gh[i]||0)|m;for(const i in FL)gh[i]=(gh[i]||0)|FL[i].r;
+ for(let i=0;i<81;i++){const el=cells[i],v=S.vals[i];let cl='c';
+  if(S.given[i])cl+=' g';else if(v)cl+=' u';
+  if(sel>=0){if(i===sel)cl+=' sel';else if(P[sel].includes(i)&&$('#oPeer').checked)cl+=' p';
+   if(sv&&v===sv&&i!==sel)cl+=' s2'}
+  if(i===hintI&&i!==sel)cl+=' hl';
+  if(HX){if(HX.pat.includes(i))cl+=' hp';if(HX.tgt.includes(i))cl+=' ht'}
+  if(FL[i])cl+=' fl';
+  if(v&&((showErr&&wrong(i))||(!showErr&&conflict(i))))cl+=' bad';
+  el.className=cl;
+  if(v)el.textContent=v;
+  else{const m=S.notes[i];let h='';
+   if(m||gh[i]){h='<div class="n">';for(let k=1;k<=9;k++)h+=`<span class="${((gh[i]||0)>>k&1)?'x':sv===k&&(m>>k&1)?'m':''}${((FL[i]&&FL[i].a||0)>>k&1)?' f':''}">${(m>>k&1)||((gh[i]||0)>>k&1)?k:''}</span>`;h+='</div>'}
+   el.innerHTML=h}}
+ const cnt=Array(10).fill(0);S.vals.forEach(v=>cnt[v]++);
+ pad.querySelectorAll('button').forEach(b=>b.classList.toggle('done',cnt[b.dataset.v]>=9));
+ $('#mist').textContent='Mistakes: '+S.mist;
+ $('#note').classList.toggle('on',noteMode);
+ $('#hc').textContent=S.hints?`(${S.hints})`:'';
+ $('#undo').style.opacity=S.hist.length?1:.4;$('#redo').style.opacity=S.redo.length?1:.4}
+
+$('#undo').onclick=()=>{if(S.done||paused)return;const h=S.hist.pop();if(h){S.vals=h.v;S.notes=h.n;S.elim=h.e;hintI=-1;render()}};
+$('#erase').onclick=erase;
+$('#note').onclick=()=>{noteMode=!noteMode;render()};
+$('#auto').onclick=()=>{if(S.done||paused)return;snap();
+ for(let i=0;i<81;i++)if(!S.vals[i])S.notes[i]=cand(S.vals,i)&~S.elim[i];
+ msg('Filled in every possible candidate.');render()};
+$('#trim').onclick=()=>{if(S.done||paused)return;snap();let n=0;
+ for(let i=0;i<81;i++){if(S.vals[i]){S.notes[i]=0;continue}const c=cand(S.vals,i),o=S.notes[i];S.notes[i]&=c;if(S.notes[i]!==o)n++}
+ msg(n?`Cleaned up ${n} cell${n==1?'':'s'}.`:'Nothing to trim.');render()};
+$('#new').onclick=newGame;$('#ovn').onclick=newGame;$('#ovc').onclick=()=>$('#ov').classList.remove('show');
+$('#pz').onclick=()=>{if(S.done)return;paused=!paused;board.classList.toggle('pause',paused);$('#pz').textContent=paused?'Resume':'Pause'};
+$('#oErr').onchange=render;$('#oPeer').onchange=render;
+$('#oTint').onchange=()=>board.classList.toggle('notint',!$('#oTint').checked);
+document.querySelectorAll('#diff button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('#diff button').forEach(x=>x.classList.toggle('on',x===b));diff=b.dataset.d;newGame()});
+
+function findHint(){
+ for(let i=0;i<81;i++)if(wrong(i))return{i,why:'This number doesn’t belong here. Clear it and try again.',fix:true};
+ for(let i=0;i<81;i++)if(!S.vals[i]){const m=cand(S.vals,i);if(pc(m)===1)return{i,v:Math.log2(m),why:'Naked single: every other number is already ruled out by this cell’s row, column and box.'}}
+ const names=['row','column','box'];
+ for(let u=0;u<27;u++)for(let v=1;v<=9;v++){if(U[u].some(i=>S.vals[i]===v))continue;
+  const spots=U[u].filter(i=>!S.vals[i]&&cand(S.vals,i)>>v&1);
+  if(spots.length===1)return{i:spots[0],v,why:`Hidden single: ${v} can only go in one place in this ${names[u/9|0]}.`}}
+ const e=[...Array(81).keys()].filter(i=>!S.vals[i]);const i=e[Math.random()*e.length|0];
+ return{i,v:S.sol[i],why:'No simple move here, so this one comes from the solution.'}}
+$('#hint').onclick=()=>{
+ if(S.done||paused)return;
+ const h=findHint();
+ if(hintI>=0&&hintI===h.i){ // second press: apply
+  snap();S.hints++;sel=h.i;
+  if(h.fix){S.vals[h.i]=0}else{S.vals[h.i]=h.v;S.notes[h.i]=0;if($('#oClean').checked)for(const p of P[h.i])S.notes[p]&=~(1<<h.v)}
+  hintI=-1;msg('');render();check();return}
+ hintI=h.i;sel=h.i;msg(h.why+' Press Hint again to reveal it.');render()};
+
+// ---- Hints: singles first, then the simplest advanced technique, with its cells highlighted ----
+const dig=m=>{const o=[];for(let v=1;v<10;v++)if(m>>v&1)o.push(v);return o.join(' and ')};
+const eff=i=>S.vals[i]?0:cand(S.vals,i)&~S.elim[i];
+function findTech(){
+ const C=[...Array(81).keys()].map(eff),V=S.vals,nm=['row','column','box'];
+ const mk=(name,pat,m,cells,why)=>{const el=[];let dm=0;
+  for(const i of cells){const e=C[i]&m&(S.notes[i]||0x3FE);if(!pat.includes(i)&&e){el.push([i,e,C[i]&m]);dm|=e}}
+  return el.length?{name,pat,tgt:el.map(x=>x[0]),elims:el,dm,why}:null};
+ const locked=()=>{for(let a=0;a<18;a++)for(let b=18;b<27;b++){const x=U[a].filter(i=>U[b].includes(i));if(x.length!==3)continue;
+  const ra=U[a].filter(i=>!x.includes(i)),rb=U[b].filter(i=>!x.includes(i)),ln=nm[a/9|0];
+  for(let v=1;v<10;v++){const m=1<<v,xs=x.filter(i=>C[i]&m);if(!xs.length)continue;
+   const inA=ra.some(i=>C[i]&m),inB=rb.some(i=>C[i]&m);let r=null;
+   if(!inA&&inB)r=mk('Locked candidates',xs,m,rb,`In this ${ln}, ${v} can only go in the highlighted cells, and they all share one box. So ${v} can’t be anywhere else in that box.`);
+   else if(!inB&&inA)r=mk('Locked candidates',xs,m,ra,`In this box, ${v} can only go in the highlighted cells, and they all share one ${ln}. So ${v} can’t be anywhere else in that ${ln}.`);
+   if(r)return r}}return null};
+ const naked=k=>{for(let ui=0;ui<27;ui++){const u=U[ui],e=u.filter(i=>C[i]&&pc(C[i])<=k);
+  for(const cb of combos(e,k)){let m=0;for(const i of cb)m|=C[i];
+   if(pc(m)===k){const r=mk(k==2?'Naked pair':'Naked triple',cb,m,u,`These ${k} cells can only hold ${dig(m)} between them, so those digits can’t go anywhere else in this ${nm[ui/9|0]}.`);if(r)return r}}}return null};
+ const hidden=k=>{for(let ui=0;ui<27;ui++){const u=U[ui],ds=[];for(let v=1;v<10;v++)if(!u.some(i=>V[i]===v))ds.push(v);
+  for(const cb of combos(ds,k)){let dm=0;for(const v of cb)dm|=1<<v;const cs=u.filter(i=>C[i]&dm);
+   if(cs.length===k&&cb.every(v=>cs.some(i=>C[i]>>v&1))){const el=[];let x=0;for(const i of cs){const y=C[i]&~dm;if(y){el.push([i,y]);x|=y}}
+    if(el.length)return{name:k==2?'Hidden pair':'Hidden triple',pat:cs,tgt:cs,elims:el,dm:x,why:`In this ${nm[ui/9|0]}, ${dig(dm)} can only go in these ${k} cells, so every other candidate can be removed from them.`}}}}return null};
+ const fish=k=>{for(let v=1;v<10;v++){const m=1<<v;for(const o of[0,1]){const base=[];
+  for(let r=0;r<9;r++){const cs=[];for(let c=0;c<9;c++)if(C[o?c*9+r:r*9+c]&m)cs.push(c);if(cs.length>=2&&cs.length<=k)base.push([r,cs])}
+  for(const cb of combos(base,k)){const cov=[...new Set(cb.flatMap(x=>x[1]))];if(cov.length!==k)continue;
+   const rs=cb.map(x=>x[0]),pat=[],cells=[];
+   for(const[r,cs]of cb)for(const c of cs)pat.push(o?c*9+r:r*9+c);
+   for(const c of cov)for(let r=0;r<9;r++)if(!rs.includes(r))cells.push(o?c*9+r:r*9+c);
+   const ln=o?'columns':'rows',cl=o?'rows':'columns';
+   const res=mk(k==2?'X-Wing':'Swordfish',pat,m,cells,`In ${k} ${ln}, ${v} only has ${k} possible spots, and they line up in the same ${k} ${cl}. ${v} has to fill one in each, so it can’t be anywhere else in those ${cl}.`);if(res)return res}}}return null};
+ const xyw=()=>{for(let p=0;p<81;p++){if(pc(C[p])!==2)continue;const pm=C[p],ws=P[p].filter(i=>pc(C[i])===2);
+  for(const a of ws)for(const b of ws){if(a>=b)continue;const ca=C[a],cb=C[b];
+   if(pc(ca&pm)!==1||pc(cb&pm)!==1||(ca&pm)===(cb&pm))continue;const sh=ca&cb&~pm;if(pc(sh)!==1)continue;
+   const r=mk('XY-Wing',[p,a,b],sh,P[a].filter(i=>i!==p&&i!==b&&P[b].includes(i)),`Whichever way the middle cell goes, one of the two wing cells must be ${dig(sh)}. So ${dig(sh)} can’t be in any cell that sees both wings.`);if(r)return r}}return null};
+ for(const f of[()=>naked(2),locked,()=>hidden(2),()=>naked(3),()=>hidden(3),()=>fish(2),xyw,()=>fish(3)]){const r=f();if(r)return r}
+ return null}
+function findHint(){
+ const V=S.vals,nm=['row','column','box'],base={pat:[],tgt:[],dm:0};
+ for(let i=0;i<81;i++)if(wrong(i))return{...base,i,fix:true,name:'Mistake',why:'This number doesn’t belong here.'};
+ for(let i=0;i<81;i++)if(!V[i]){const m=eff(i);if(pc(m)===1)return{...base,i,v:31-Math.clz32(m),name:'Naked single',why:'Every other number is ruled out by this cell’s row, column and box.'}}
+ for(let u=0;u<27;u++)for(let v=1;v<10;v++){if(U[u].some(i=>V[i]===v))continue;
+  const s=U[u].filter(i=>!V[i]&&eff(i)>>v&1);
+  if(s.length===1)return{...base,i:s[0],v,pat:U[u],name:'Hidden single',why:`${v} can only go in one place in this ${nm[u/9|0]}.`}}
+ const t=findTech();if(t)return{...t,i:-1};
+ const e=[...Array(81).keys()].filter(i=>!V[i]);const i=e[Math.random()*e.length|0];
+ return{...base,i,v:S.sol[i],name:'No simple step',why:'Nothing logical turned up, so this one comes from the solution.'}}
+$('#hint').onclick=()=>{
+ if(S.done||paused)return;
+ if(HX){const h=HX;snap();S.hints++;HX=null;
+  if(h.elims){for(const[i,m,f]of h.elims){S.elim[i]|=(f||m);if(!S.notes[i])S.notes[i]=cand(S.vals,i);S.notes[i]&=~S.elim[i]}
+   msg(`Removed ${dig(h.dm)} from ${h.elims.length} cell${h.elims.length>1?'s':''} (notes updated). Hint again for the next step.`)}
+  else if(h.fix){S.vals[h.i]=0;msg('')}
+  else{sel=h.i;S.vals[h.i]=h.v;S.notes[h.i]=0;if($('#oClean').checked)for(const p of P[h.i])S.notes[p]&=~(1<<h.v);msg('')}
+  render();check();return}
+ syncPend();const h=findHint();HX=h;PEND={s:S,l:h.elims?h.elims.slice():[]};if(h.i>=0)sel=h.i;
+ msg(`${h.name}: ${h.why} Press Hint again to ${h.elims?'apply it':h.fix?'clear it':'reveal it'}.${h.elims?' (Yellow = pattern, red = remove.)':''}`);render()};
+// ---- Undo / redo, showing exactly what changed ----
+let FL={},flt=0;
+const cur=()=>({v:S.vals.slice(),n:S.notes.slice(),e:S.elim.slice()});
+function flash(label,a,b){
+ const w=i=>'R'+((i/9|0)+1)+'C'+(i%9+1),vi=[],na=[],nr=[];let first=-1,fv=-1;FL={};
+ for(let i=0;i<81;i++){const vc=a.v[i]!==b.v[i],ad=b.n[i]&~a.n[i],rm=a.n[i]&~b.n[i];
+  if(!vc&&!ad&&!rm)continue;if(first<0)first=i;if(vc&&fv<0)fv=i;FL[i]={a:ad,r:rm};
+  if(vc)vi.push(b.v[i]?`${w(i)} is now ${b.v[i]}`:`${w(i)}: ${a.v[i]} removed`);
+  if(ad)na.push(`note ${dig(ad)} added to ${w(i)}`);
+  if(rm)nr.push(`note ${dig(rm)} removed from ${w(i)}`)}
+ const sm=(l,t)=>l.length>3?`${l.length} ${t}`:l.join('; ');
+ const parts=[sm(vi,'cells changed'),sm(na,'cells got notes added'),sm(nr,'cells lost notes')].filter(Boolean);
+ msg(`${label}: ${parts.join('; ')||'nothing changed'}. (dashed = changed)`);
+ if(fv>=0)sel=fv;else if(first>=0)sel=first;
+ render();clearTimeout(flt);flt=setTimeout(()=>{FL={};render()},4000)}
+function restore(h){S.vals=h.v;S.notes=h.n;S.elim=h.e;HX=null}
+$('#undo').onclick=()=>{if(S.done||paused)return;const h=S.hist.pop();if(!h)return;const c=cur();S.redo.push(c);restore(h);flash('Undo',c,h)};
+$('#redo').onclick=()=>{if(S.done||paused)return;const h=S.redo.pop();if(!h)return;const c=cur();S.hist.push(c);restore(h);flash('Redo',c,h)};
+// If you make a hinted removal yourself, remember it so the same hint doesn't come back
+let PEND={s:null,l:[]};
+function syncPend(){if(PEND.s!==S)return;for(const[i,m,f]of PEND.l){const n=S.notes[i];if(!S.vals[i]&&n){const r=(f||m)&~n;if(r)S.elim[i]|=r}}}
+document.addEventListener('keydown',e=>{
+ if(e.ctrlKey||e.metaKey){const k=e.key.toLowerCase();if(k==='z'&&!e.shiftKey){e.preventDefault();$('#undo').click()}else if(k==='y'||(k==='z'&&e.shiftKey)){e.preventDefault();$('#redo').click()}return}
+ if(/^[1-9]$/.test(e.key))input(+e.key);
+ else if(e.key==='Backspace'||e.key==='Delete'||e.key==='0')erase();
+ else if(e.key==='n'||e.key==='N'||e.key===' '){e.preventDefault();noteMode=!noteMode;render()}
+ else if(e.key==='h'||e.key==='H')$('#hint').click();
+ else if(e.key.startsWith('Arrow')){e.preventDefault();if(sel<0)sel=0;let r=sel/9|0,c=sel%9;
+  if(e.key==='ArrowUp')r=(r+8)%9;if(e.key==='ArrowDown')r=(r+1)%9;if(e.key==='ArrowLeft')c=(c+8)%9;if(e.key==='ArrowRight')c=(c+1)%9;
+  sel=r*9+c;hintI=-1;render()}});
+newGame();
+</script></body></html>
