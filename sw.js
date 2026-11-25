@@ -1,29 +1,51 @@
-const V = 'sudoku-v2',
-  A = [
-    './',
-    'index.html',
-    'manifest.webmanifest',
-    'icons/icon-180.png',
-    'icons/icon-192.png',
-    'icons/icon-512.png',
-  ];
-self.addEventListener('install', (e) =>
-  e.waitUntil(
+// Service worker: makes the app work offline.
+// Strategy: network first (so a deploy shows up immediately), falling back to the
+// cache when offline. Bump VERSION whenever the list of files changes.
+const VERSION = 'sudoku-v3';
+const FILES = [
+  './',
+  'index.html',
+  'css/styles.css',
+  'js/solver.js',
+  'js/game.js',
+  'js/hints.js',
+  'js/history.js',
+  'js/ui.js',
+  'js/main.js',
+  'manifest.webmanifest',
+  'icons/icon-180.png',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
     caches
-      .open(V)
-      .then((c) => c.addAll(A))
+      .open(VERSION)
+      .then((cache) => cache.addAll(FILES))
       .then(() => self.skipWaiting()),
-  ),
-);
-self.addEventListener('activate', (e) =>
-  e.waitUntil(
+  );
+});
+
+// Drop caches from older versions and take control of open pages right away.
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
     caches
       .keys()
-      .then((k) => Promise.all(k.filter((x) => x !== V).map((x) => caches.delete(x))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
-  ),
-);
-self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request)));
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(VERSION).then((cache) => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request)),
+  );
 });

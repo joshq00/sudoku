@@ -771,7 +771,7 @@ h1 {
   --pad-h: clamp(42px, 6.5dvh, 56px);
 }
 
-/* Row-level layout: [ digits 3x3 ] [ action buttons 2 wide ] sit side by side
+/* Row-level layout: [ action buttons 2 wide ] [ digits 3x3 ] sit side by side
    under the board. Both blocks are three rows tall (--pad-h each). */
 .controls {
   display: flex;
@@ -808,4 +808,9 @@ h1 {
 }
 .controls #auto {
   grid-column: span 2;
+}
+
+/* Let both flex children shrink below their content width (Safari is strict about this). */
+.controls > * {
+  min-width: 0;
 }

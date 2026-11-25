@@ -20,7 +20,9 @@ test.describe('layout', () => {
     expect(Math.max(...centres) - Math.min(...centres)).toBeLessThanOrEqual(6); // one line
   });
 
-  test('under the board: digits and action buttons side by side', async ({ page }) => {
+  test('under the board: action buttons and digits side by side, digits on the right', async ({
+    page,
+  }) => {
     await load(page);
     await expect(page.locator('.tools button')).toHaveText([
       /Undo/,
@@ -34,8 +36,8 @@ test.describe('layout', () => {
       const r = (s) => document.querySelector(s).getBoundingClientRect();
       return { pad: r('#pad'), tools: r('.tools'), boardBottom: r('#board').bottom };
     });
-    expect(m.pad.left).toBeLessThan(m.tools.left); // digits on the left
-    expect(m.tools.left).toBeGreaterThanOrEqual(m.pad.right - 1); // no overlap
+    expect(m.tools.left).toBeLessThan(m.pad.left); // digits on the right
+    expect(m.pad.left).toBeGreaterThanOrEqual(m.tools.right - 1); // no overlap
     expect(Math.abs(m.pad.top - m.tools.top)).toBeLessThanOrEqual(2); // same row
     expect(m.pad.top).toBeGreaterThanOrEqual(m.boardBottom - 1);
   });
@@ -189,7 +191,11 @@ test('installable web app: manifest, icons, service worker and iOS tags', async 
   expect(manifest.display).toBe('standalone');
   expect(manifest.start_url).toBe('./');
   for (const icon of manifest.icons) expect((await request.get('/' + icon.src)).ok()).toBe(true);
-  expect((await request.get('/sw.js')).ok()).toBe(true);
+  const sw = await request.get('/sw.js');
+  expect(sw.ok()).toBe(true);
+  const swText = await sw.text();
+  for (const f of ['css/styles.css', 'js/main.js']) expect(swText).toContain(f); // precached
+  expect(swText).toMatch(/fetch\(event\.request\)/); // network first
   expect((await request.get('/icons/icon-180.png')).ok()).toBe(true);
 
   await expect(page.locator('link[rel=manifest]')).toHaveCount(1);
