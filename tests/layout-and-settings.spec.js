@@ -20,7 +20,7 @@ test.describe('layout', () => {
     expect(Math.max(...centres) - Math.min(...centres)).toBeLessThanOrEqual(6); // one line
   });
 
-  test('bottom is Undo Redo Erase Notes Auto, then a row of digits', async ({ page }) => {
+  test('under the board: digits and action buttons side by side', async ({ page }) => {
     await load(page);
     await expect(page.locator('.tools button')).toHaveText([
       /Undo/,
@@ -32,14 +32,12 @@ test.describe('layout', () => {
     await expect(page.locator('#pad button')).toHaveCount(9);
     const m = await page.evaluate(() => {
       const r = (s) => document.querySelector(s).getBoundingClientRect();
-      return {
-        toolsBottom: r('.tools').bottom,
-        padTop: r('#pad').top,
-        boardBottom: r('#board').bottom,
-      };
+      return { pad: r('#pad'), tools: r('.tools'), boardBottom: r('#board').bottom };
     });
-    expect(m.padTop).toBeGreaterThanOrEqual(m.toolsBottom - 1); // digits below the tool row
-    expect(m.toolsBottom).toBeGreaterThan(m.boardBottom);
+    expect(m.pad.left).toBeLessThan(m.tools.left); // digits on the left
+    expect(m.tools.left).toBeGreaterThanOrEqual(m.pad.right - 1); // no overlap
+    expect(Math.abs(m.pad.top - m.tools.top)).toBeLessThanOrEqual(2); // same row
+    expect(m.pad.top).toBeGreaterThanOrEqual(m.boardBottom - 1);
   });
 
   test('the hint message sits underneath the buttons', async ({ page }) => {

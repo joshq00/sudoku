@@ -663,7 +663,7 @@ h1 {
     max(
       220px,
       calc(
-        100dvh - 178px - 2 * var(--pad-h) - env(safe-area-inset-top, 0px) -
+        100dvh - 132px - 3 * var(--pad-h) - env(safe-area-inset-top, 0px) -
           env(safe-area-inset-bottom, 0px)
       )
     )
@@ -769,4 +769,43 @@ h1 {
 /* Pad button height scales with the screen; the board's height budget uses it too. */
 :root {
   --pad-h: clamp(42px, 6.5dvh, 56px);
+}
+
+/* Row-level layout: [ digits 3x3 ] [ action buttons 2 wide ] sit side by side
+   under the board. Both blocks are three rows tall (--pad-h each). */
+.controls {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+.controls #pad {
+  flex: 3 1 0;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: var(--pad-h);
+  gap: 6px;
+}
+.controls #pad button,
+.controls #pad button:nth-child(6) {
+  grid-column: auto;
+  height: auto;
+  font-size: clamp(24px, 7.5vw, 32px);
+}
+.controls .tools {
+  flex: 2 1 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: var(--pad-h);
+  gap: 6px;
+}
+.controls .tools button {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  font-size: 12px;
+}
+.controls .tools button b {
+  font-size: 17px;
+}
+.controls #auto {
+  grid-column: span 2;
 }
