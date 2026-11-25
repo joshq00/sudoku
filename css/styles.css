@@ -894,3 +894,14 @@ h1 {
   font-size: 12.5px;
   color: var(--mut);
 }
+
+/* Equal rows and columns no matter what is inside. Without minmax(0, 1fr) a row with no
+   digits collapses to its content height and the grid looks off-centre. */
+#board {
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-rows: repeat(9, minmax(0, 1fr));
+}
+.c {
+  min-height: 0;
+  overflow: hidden;
+}

@@ -68,6 +68,32 @@ test.describe('layout', () => {
     expect(Math.abs(r.redo.left - r.note.left)).toBeLessThanOrEqual(2); // Redo above Notes
   });
 
+  test('every cell is the same size, even when whole rows are empty (seed M-ZD52TQ)', async ({
+    page,
+  }) => {
+    await page.goto('/?seed=M-ZD52TQ');
+    await page.waitForFunction(() => typeof S !== 'undefined' && S.seed === 'M-ZD52TQ' && S.vals);
+    await page.waitForFunction(() => document.querySelectorAll('.c.g').length > 20);
+    const spread = () =>
+      page.evaluate(() => {
+        const r = [...document.querySelectorAll('.c')].map((c) => c.getBoundingClientRect());
+        const range = (f) => Math.max(...r.map(f)) - Math.min(...r.map(f));
+        return { w: range((x) => x.width), h: range((x) => x.height) };
+      });
+    const a = await spread();
+    expect(a.w).toBeLessThanOrEqual(1);
+    expect(a.h).toBeLessThanOrEqual(1);
+    // Also with an entirely empty grid.
+    await page.evaluate(() => {
+      S.vals = Array(81).fill(0);
+      S.given = Array(81).fill(false);
+      render();
+    });
+    const b = await spread();
+    expect(b.w).toBeLessThanOrEqual(1);
+    expect(b.h).toBeLessThanOrEqual(1);
+  });
+
   test('fits the screen: nothing hidden, no page scroll, no sideways scroll', async ({ page }) => {
     await load(page);
     await fresh(page, 'easy');
