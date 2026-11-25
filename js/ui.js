@@ -108,3 +108,13 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') menuOpen(false);
 });
 $('#trim').addEventListener('click', () => menuOpen(false));
+
+// Build stamp: show when the deployed commit was made, in the viewer's local time.
+// Without a stamped value (local development) it just says "dev build".
+(() => {
+  const el = $('#build');
+  const when = Date.parse(el.dataset.commit);
+  el.textContent = Number.isNaN(when)
+    ? 'dev build'
+    : `${new Date(when).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })} \u00b7 ${el.dataset.sha}`;
+})();

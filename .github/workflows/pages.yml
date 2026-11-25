@@ -44,6 +44,8 @@ jobs:
         run: |
           mkdir _site
           cp -r index.html sw.js manifest.webmanifest .nojekyll css js icons _site/
+          # Stamp commit time + hash, add ?v=<hash> to css/js, version the service worker.
+          node scripts/stamp.js _site
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

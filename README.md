@@ -72,4 +72,10 @@ Formatting uses Prettier: `npm run format` / `npm run format:check`.
   `apple-touch-icon` and the manifest.
 - **Android (Chrome):** menu → **Install app** / **Add to Home screen**.
 
-After changing cached files, bump `VERSION` in `sw.js` (e.g. `sudoku-v5`) so installed copies update.
+## Caching
+
+Every deploy is cache-busted automatically: `scripts/stamp.js` (run by the workflow) adds
+`?v=<commit hash>` to all CSS/JS links and puts the hash in the service worker's cache
+name. The service worker is network-first (always revalidates), so it only serves cached
+files when you are offline. The tiny line at the bottom of the page is the commit time
+and hash of what you are running (`dev build` when run locally).

@@ -1,7 +1,8 @@
 // Service worker: makes the app work offline.
 // Strategy: network first (so a deploy shows up immediately), falling back to the
-// cache when offline. Bump VERSION whenever the list of files changes.
-const VERSION = 'sudoku-v4';
+// cache when offline. VERSION is stamped with the commit hash at deploy time
+// (scripts/stamp.js), so every deploy replaces the old cache automatically.
+const VERSION = 'sudoku-__COMMIT_SHA__';
 const FILES = [
   './',
   'index.html',
@@ -48,6 +49,6 @@ self.addEventListener('fetch', (event) => {
         caches.open(VERSION).then((cache) => cache.put(event.request, copy));
         return response;
       })
-      .catch(() => caches.match(event.request)),
+      .catch(() => caches.match(event.request, { ignoreSearch: true })),
   );
 });

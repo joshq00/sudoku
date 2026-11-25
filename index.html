@@ -2,6 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Sudoku</title>
     <link rel="manifest" href="manifest.webmanifest" />
@@ -56,6 +59,7 @@
         <div id="pad"></div>
       </div>
       <div id="msg"></div>
+      <footer id="build" data-commit="__COMMIT_TIME__" data-sha="__COMMIT_SHA__"></footer>
     </div>
     <div id="menu" role="menu">
       <div class="row stat"><span id="mist">Mistakes: 0</span><span id="hn">Hints: 0</span></div>
@@ -97,7 +101,9 @@
     <script>
       // Offline support: only on http(s), never on file://
       if ('serviceWorker' in navigator && location.protocol.startsWith('http'))
-        addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+        addEventListener('load', () =>
+          navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {}),
+        );
     </script>
   </body>
 </html>

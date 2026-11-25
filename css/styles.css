@@ -663,7 +663,7 @@ h1 {
     max(
       220px,
       calc(
-        100dvh - 132px - 3 * var(--pad-h) - env(safe-area-inset-top, 0px) -
+        100dvh - 146px - 3 * var(--pad-h) - env(safe-area-inset-top, 0px) -
           env(safe-area-inset-bottom, 0px)
       )
     )
@@ -813,4 +813,17 @@ h1 {
 /* Let both flex children shrink below their content width (Safari is strict about this). */
 .controls > * {
   min-width: 0;
+}
+
+/* Tiny build stamp: when the deployed commit was made. */
+#build {
+  flex: none;
+  padding-top: 2px;
+  font:
+    9px/1.2 system-ui,
+    sans-serif;
+  color: var(--mut);
+  opacity: 0.7;
+  text-align: center;
+  user-select: none;
 }
