@@ -160,11 +160,22 @@ $('#copySeed').addEventListener('click', async (e) => {
   flashLabel(e.currentTarget, (await copyText(S.seed)) ? 'Copied!' : 'Press & hold');
 });
 
+/** Last resort when the browser blocks sharing and copying: show the link to long-press. */
+function showLink(url) {
+  const out = $('#linkOut');
+  $('#linkBox').hidden = false;
+  out.value = url;
+  out.focus();
+  out.select();
+  out.setSelectionRange(0, url.length);
+}
+
 $('#shareSeed').addEventListener('click', async (e) => {
   const btn = e.currentTarget,
     url = seedLink();
+  $('#linkBox').hidden = true;
   if (navigator.share) {
-    // Phones: open the native share sheet. Ignore "cancelled".
+    // Phones: open the native share sheet. Cancelling it is fine and needs no fallback.
     try {
       await navigator.share({ title: 'Sudoku', text: 'Try this Sudoku (' + S.seed + ')', url });
       return;
@@ -172,7 +183,8 @@ $('#shareSeed').addEventListener('click', async (e) => {
       if (err && err.name === 'AbortError') return;
     }
   }
-  flashLabel(btn, (await copyText(url)) ? 'Link copied!' : 'Copy failed');
+  if (await copyText(url)) flashLabel(btn, 'Link copied!');
+  else showLink(url);
 });
 
 $('#seedForm').addEventListener('submit', (e) => {

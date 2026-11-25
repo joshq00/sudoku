@@ -92,6 +92,65 @@ test.describe('seed controls', () => {
     expect(parseSeedInPage(link)).toBeTruthy();
   });
 
+  test('if share and copy are both blocked, the link is shown to copy by hand', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: async () => Promise.reject(new Error('blocked')) },
+        configurable: true,
+      });
+      Object.defineProperty(navigator, 'share', {
+        value: async () =>
+          Promise.reject(Object.assign(new Error('no'), { name: 'NotAllowedError' })),
+        configurable: true,
+      });
+      document.execCommand = () => false;
+    });
+    await load(page);
+    await openMenu(page);
+    await page.click('#shareSeed');
+    await expect(page.locator('#linkOut')).toBeVisible();
+    const link = await page.inputValue('#linkOut');
+    expect(new URL(link).searchParams.get('seed')).toBe(await page.evaluate(() => S.seed));
+  });
+
+  test('cancelling the native share sheet shows no fallback', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'share', {
+        value: async () => Promise.reject(Object.assign(new Error('x'), { name: 'AbortError' })),
+        configurable: true,
+      });
+    });
+    await load(page);
+    await openMenu(page);
+    await page.click('#shareSeed');
+    await expect(page.locator('#linkBox')).toBeHidden();
+  });
+
+  test('the native share sheet gets a link that opens the same puzzle', async ({
+    page,
+    context,
+  }) => {
+    await page.addInitScript(() => {
+      window.__shared = null;
+      Object.defineProperty(navigator, 'share', {
+        value: async (d) => (window.__shared = d),
+        configurable: true,
+      });
+    });
+    await load(page);
+    await openMenu(page);
+    const seed = await page.evaluate(() => S.seed);
+    await page.click('#shareSeed');
+    const shared = await page.evaluate(() => window.__shared);
+    expect(shared.url).toContain('seed=' + seed);
+    const other = await context.newPage();
+    await other.goto(shared.url);
+    await other.waitForFunction(() => typeof S !== 'undefined' && S.vals);
+    expect(await other.evaluate(() => S.seed)).toBe(seed);
+  });
+
   test('loading a seed starts exactly that puzzle and switches difficulty', async ({ page }) => {
     await load(page);
     await openMenu(page);
