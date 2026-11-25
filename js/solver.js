@@ -54,9 +54,60 @@ const cand = (g, i) => {
   for (const p of P[i]) if (g[p]) m |= 1 << g[p];
   return 0x3fe & ~m;
 };
+// ---- Seeds ----
+// A seed like "M-7K3F2Q" is a difficulty letter (E/M/H) plus six characters. The same seed
+// always produces the same puzzle on every device: generation draws all randomness from
+// `rng`, which generate() points at a PRNG seeded from the text, and it never looks at the
+// clock. Outside generate(), `rng` is plain Math.random.
+let rng = Math.random;
+const SEED_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no look-alikes (0/O, 1/I/L)
+const SEED_LEVELS = { E: 'easy', M: 'medium', H: 'hard' };
+
+/** A fresh random seed for the given difficulty, e.g. makeSeed('medium') -> "M-7K3F2Q". */
+function makeSeed(d) {
+  let code = '';
+  for (let i = 0; i < 6; i++) code += SEED_CHARS[(Math.random() * SEED_CHARS.length) | 0];
+  return d[0].toUpperCase() + '-' + code;
+}
+
+/**
+ * Reads a seed from user input: "m-7k3f2q", " M 7K3F2Q ", or a link containing ?seed=...
+ * Returns { difficulty, seed } with the seed normalised to "M-7K3F2Q", or null if invalid.
+ */
+function parseSeed(text) {
+  let t = String(text == null ? '' : text).trim();
+  const fromLink = t.match(/[?&#]seed=([^&#\s]+)/i);
+  if (fromLink) t = decodeURIComponent(fromLink[1]);
+  const m = t
+    .toUpperCase()
+    .replace(/[\s-]/g, '')
+    .match(/^([EMH])([A-Z0-9]{6})$/);
+  return m ? { difficulty: SEED_LEVELS[m[1]], seed: m[1] + '-' + m[2] } : null;
+}
+
+// String -> 32-bit number (xmur3), then a small fast PRNG (mulberry32).
+function hashSeed(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  h = Math.imul(h ^ (h >>> 16), 2246822507);
+  h = Math.imul(h ^ (h >>> 13), 3266489909);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+function mulberry32(a) {
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 const shuf = (a) => {
   for (let i = a.length - 1; i > 0; i--) {
-    const j = (Math.random() * (i + 1)) | 0;
+    const j = (rng() * (i + 1)) | 0;
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
@@ -278,33 +329,38 @@ function grade(g, max) {
 }
 // Puzzles are only kept if the logic solver (and so a human) can solve them without guessing,
 // and the requested level is the hardest technique needed. Logic-solvable => unique solution.
-function generate(d) {
+function generate(d, seed = makeSeed(d)) {
   const want = { easy: 1, medium: 2, hard: 3 }[d],
     floor = { easy: 38, medium: 28, hard: 0 }[d];
-  let best = null,
-    bs = -1e9;
-  const t0 = Date.now();
-  for (let a = 0; a < (d === 'hard' ? 400 : 14); a++) {
-    const sol = Array(81).fill(0);
-    fill(sol);
-    const g = sol.slice();
-    let n = 81;
-    for (const i of shuf([...Array(81).keys()])) {
-      if (n <= floor) break;
-      const v = g[i];
-      g[i] = 0;
-      if (grade(g, want)[0] === 0) g[i] = v;
-      else n--;
+  const outsideRng = rng;
+  rng = mulberry32(hashSeed(seed)); // all randomness below comes from the seed
+  try {
+    let best = null,
+      bs = -1e9;
+    // Fixed attempt counts (no time limits) so a seed gives the same puzzle on any device.
+    for (let a = 0; a < (d === 'hard' ? 200 : 14); a++) {
+      const sol = Array(81).fill(0);
+      fill(sol);
+      const g = sol.slice();
+      let n = 81;
+      for (const i of shuf([...Array(81).keys()])) {
+        if (n <= floor) break;
+        const v = g[i];
+        g[i] = 0;
+        if (grade(g, want)[0] === 0) g[i] = v;
+        else n--;
+      }
+      const r = grade(g, want),
+        sc = (r[0] === want ? 1000 : 0) + (d === 'hard' ? r[2] + 8 * r[1] : 0) - n;
+      if (sc > bs) {
+        bs = sc;
+        best = { sol, puz: g, seed };
+      }
+      if (d !== 'hard' && r[0] === want) break;
+      if (d === 'hard' && r[0] === 3 && r[2] >= 44 && r[1] >= 2) break;
     }
-    const r = grade(g, want),
-      sc = (r[0] === want ? 1000 : 0) + (d === 'hard' ? r[2] + 8 * r[1] : 0) - n;
-    if (sc > bs) {
-      bs = sc;
-      best = { sol, puz: g };
-    }
-    if (d !== 'hard' && r[0] === want) break;
-    if (d === 'hard' && r[0] === 3 && r[2] >= 44 && r[1] >= 2) break;
-    if (Date.now() - t0 > (d === 'hard' ? 4500 : 2500)) break;
+    return best;
+  } finally {
+    rng = outsideRng;
   }
-  return best;
 }

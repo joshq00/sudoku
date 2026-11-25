@@ -43,19 +43,21 @@ for (let v = 1; v <= 9; v++) {
   pad.appendChild(b);
 }
 
-function newGame() {
+/** Starts a new game at the current difficulty. Pass a seed string to replay a specific puzzle. */
+function newGame(seed) {
   clearInterval(tick);
   $('#ov').classList.remove('show');
   msg('Generating a ' + diff + ' puzzle…');
   board.style.opacity = 0.4;
   setTimeout(() => {
-    const g = generate(diff);
+    const g = generate(diff, typeof seed === 'string' ? seed : undefined);
     board.style.opacity = 1;
     start(g);
   }, 30);
 }
-function start({ sol, puz }) {
+function start({ sol, puz, seed }) {
   S = {
+    seed,
     sol,
     given: puz.map((v) => v > 0),
     vals: puz.slice(),
@@ -75,6 +77,7 @@ function start({ sol, puz }) {
   $('#pz').innerHTML = ICON_PAUSE;
   $('#ov').classList.remove('show');
   msg('');
+  $('#seedText').textContent = seed;
   clearInterval(tick);
   tick = setInterval(() => {
     if (!paused && !S.done) {
@@ -224,16 +227,21 @@ $('#trim').onclick = () => {
   msg(n ? `Cleaned up ${n} cell${n == 1 ? '' : 's'}.` : 'Nothing to trim.');
   render();
 };
-$('#ovn').onclick = newGame;
+$('#ovn').onclick = () => newGame();
 $('#ovc').onclick = () => $('#ov').classList.remove('show');
 $('#oErr').onchange = render;
 $('#oPeer').onchange = render;
 $('#oTint').onchange = () => board.classList.toggle('notint', !$('#oTint').checked);
-document.querySelectorAll('#diff button').forEach(
-  (b) =>
-    (b.onclick = () => {
-      document.querySelectorAll('#diff button').forEach((x) => x.classList.toggle('on', x === b));
-      diff = b.dataset.d;
-      newGame();
-    }),
-);
+/** Selects a difficulty button and updates `diff` (does not start a game). */
+function setDiff(d) {
+  diff = d;
+  document
+    .querySelectorAll('#diff button')
+    .forEach((x) => x.classList.toggle('on', x.dataset.d === d));
+}
+document.querySelectorAll('#diff button').forEach((b) => {
+  b.onclick = () => {
+    setDiff(b.dataset.d);
+    newGame();
+  };
+});

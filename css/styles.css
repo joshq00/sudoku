@@ -837,3 +837,40 @@ h1 {
   text-align: center;
   user-select: none;
 }
+
+/* Seed controls in the settings menu */
+#menu {
+  max-height: calc(100dvh - 64px);
+  overflow-y: auto;
+}
+#menu .btns {
+  display: flex;
+  gap: 6px;
+}
+#menu .btns button,
+#menu #loadSeed {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+#seedText {
+  font-family: ui-monospace, Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+#seedIn {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  font-size: 16px; /* 16px stops iOS from zooming the page when the field is focused */
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--cell);
+  color: var(--fg);
+  text-transform: uppercase;
+}
+#seedErr {
+  color: var(--err);
+  font-size: 12.5px;
+  padding-bottom: 6px;
+}

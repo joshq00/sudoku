@@ -118,3 +118,76 @@ $('#trim').addEventListener('click', () => menuOpen(false));
     ? 'dev build'
     : `${new Date(when).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })} \u00b7 ${el.dataset.sha}`;
 })();
+
+// ---- Seeds: copy/share the current puzzle, or load someone else's ----
+const seedLink = () => {
+  const url = new URL(location.href);
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('seed', S.seed);
+  return url.toString();
+};
+
+/** Copies text to the clipboard (with a fallback for older browsers). Resolves true/false. */
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch (e2) {}
+    ta.remove();
+    return ok;
+  }
+}
+
+/** Briefly replaces a button's label, e.g. "Copied!". */
+function flashLabel(btn, text) {
+  const old = btn.dataset.label || btn.textContent;
+  btn.dataset.label = old;
+  btn.textContent = text;
+  setTimeout(() => (btn.textContent = old), 1500);
+}
+
+$('#copySeed').addEventListener('click', async (e) => {
+  flashLabel(e.currentTarget, (await copyText(S.seed)) ? 'Copied!' : 'Press & hold');
+});
+
+$('#shareSeed').addEventListener('click', async (e) => {
+  const btn = e.currentTarget,
+    url = seedLink();
+  if (navigator.share) {
+    // Phones: open the native share sheet. Ignore "cancelled".
+    try {
+      await navigator.share({ title: 'Sudoku', text: 'Try this Sudoku (' + S.seed + ')', url });
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+  }
+  flashLabel(btn, (await copyText(url)) ? 'Link copied!' : 'Copy failed');
+});
+
+$('#seedForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const parsed = parseSeed($('#seedIn').value);
+  const err = $('#seedErr');
+  if (!parsed) {
+    err.textContent = 'That is not a valid seed. Seeds look like M-7K3F2Q.';
+    err.hidden = false;
+    return;
+  }
+  err.hidden = true;
+  $('#seedIn').value = '';
+  menuOpen(false);
+  setDiff(parsed.difficulty);
+  newGame(parsed.seed);
+});
+$('#seedIn').addEventListener('input', () => ($('#seedErr').hidden = true));

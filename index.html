@@ -83,6 +83,24 @@
         ><span>Highlight matching notes</span><input type="checkbox" id="oTint" checked
       /></label>
       <hr />
+      <div class="row">
+        <span>Seed <b id="seedText">-</b></span>
+        <span class="btns"
+          ><button id="copySeed">Copy</button><button id="shareSeed">Share link</button></span
+        >
+      </div>
+      <form id="seedForm" class="row" autocomplete="off">
+        <input
+          id="seedIn"
+          placeholder="Load a seed or link"
+          autocapitalize="characters"
+          autocorrect="off"
+          spellcheck="false"
+        />
+        <button id="loadSeed" type="submit">Load</button>
+      </form>
+      <div id="seedErr" role="alert" hidden></div>
+      <hr />
       <button id="trim" class="mb">&#9986; Trim notes</button>
     </div>
     <div id="ov">
