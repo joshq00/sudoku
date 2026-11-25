@@ -72,4 +72,4 @@ Formatting uses Prettier: `npm run format` / `npm run format:check`.
   `apple-touch-icon` and the manifest.
 - **Android (Chrome):** menu → **Install app** / **Add to Home screen**.
 
-After changing cached files, bump `V` in `sw.js` (e.g. `sudoku-v3`) so installed copies update.
+After changing cached files, bump `VERSION` in `sw.js` (e.g. `sudoku-v5`) so installed copies update.

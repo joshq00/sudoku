@@ -195,7 +195,7 @@ test('installable web app: manifest, icons, service worker and iOS tags', async 
   expect(sw.ok()).toBe(true);
   const swText = await sw.text();
   for (const f of ['css/styles.css', 'js/main.js']) expect(swText).toContain(f); // precached
-  expect(swText).toMatch(/fetch\(event\.request\)/); // network first
+  expect(swText).toMatch(/fetch\(event\.request, \{ cache: 'no-cache' \}\)/); // network first, revalidated
   expect((await request.get('/icons/icon-180.png')).ok()).toBe(true);
 
   await expect(page.locator('link[rel=manifest]')).toHaveCount(1);

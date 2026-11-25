@@ -1,7 +1,7 @@
 // Service worker: makes the app work offline.
 // Strategy: network first (so a deploy shows up immediately), falling back to the
 // cache when offline. Bump VERSION whenever the list of files changes.
-const VERSION = 'sudoku-v3';
+const VERSION = 'sudoku-v4';
 const FILES = [
   './',
   'index.html',
@@ -22,7 +22,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(VERSION)
-      .then((cache) => cache.addAll(FILES))
+      // cache: 'reload' skips the browser's HTTP cache so we never precache stale files
+      .then((cache) => cache.addAll(FILES.map((f) => new Request(f, { cache: 'reload' }))))
       .then(() => self.skipWaiting()),
   );
 });
@@ -40,7 +41,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    fetch(event.request)
+    // cache: 'no-cache' = always revalidate with the server (never trust the HTTP cache)
+    fetch(event.request, { cache: 'no-cache' })
       .then((response) => {
         const copy = response.clone();
         caches.open(VERSION).then((cache) => cache.put(event.request, copy));
