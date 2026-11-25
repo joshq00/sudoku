@@ -52,6 +52,22 @@ test.describe('layout', () => {
     expect(m.toolsTop).toBeLessThan(m.padBottom);
   });
 
+  test('Notes is a tall button on the right, spanning the Erase and Auto rows', async ({
+    page,
+  }) => {
+    await load(page);
+    const r = await page.evaluate(() => {
+      const b = (s) => document.querySelector(s).getBoundingClientRect();
+      return { note: b('#note'), erase: b('#erase'), auto: b('#auto'), redo: b('#redo') };
+    });
+    expect(r.note.left).toBeGreaterThanOrEqual(r.erase.right - 1); // right column
+    expect(Math.abs(r.note.top - r.erase.top)).toBeLessThanOrEqual(2); // starts at Erase's row
+    expect(Math.abs(r.note.bottom - r.auto.bottom)).toBeLessThanOrEqual(2); // ends at Auto's row
+    expect(r.auto.top).toBeGreaterThan(r.erase.bottom - 1); // Auto under Erase
+    expect(Math.abs(r.auto.width - r.erase.width)).toBeLessThanOrEqual(2); // Auto no longer full width
+    expect(Math.abs(r.redo.left - r.note.left)).toBeLessThanOrEqual(2); // Redo above Notes
+  });
+
   test('fits the screen: nothing hidden, no page scroll, no sideways scroll', async ({ page }) => {
     await load(page);
     await fresh(page, 'easy');
