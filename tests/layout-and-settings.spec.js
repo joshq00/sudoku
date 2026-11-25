@@ -52,27 +52,6 @@ test.describe('layout', () => {
     expect(m.toolsTop).toBeLessThan(m.padBottom);
   });
 
-  test('a Hint button sits under the number pad and the message below it', async ({ page }) => {
-    await load(page);
-    await fresh(page, 'easy');
-    const m = await page.evaluate(() => {
-      const r = (s) => document.querySelector(s).getBoundingClientRect();
-      return {
-        padBottom: r('#pad').bottom,
-        hintTop: r('#hint2').top,
-        hintBottom: r('#hint2').bottom,
-        msgTop: r('#msg').top,
-      };
-    });
-    expect(m.hintTop).toBeGreaterThanOrEqual(m.padBottom - 1);
-    expect(m.msgTop).toBeGreaterThanOrEqual(m.hintBottom - 1);
-    await page.click('#hint2');
-    expect(await page.evaluate(() => !!HX)).toBe(true);
-    await expect(page.locator('#msg')).not.toBeEmpty();
-    await page.click('#hint2'); // second tap applies it
-    expect(await page.evaluate(() => S.hints)).toBe(1);
-  });
-
   test('fits the screen: nothing hidden, no page scroll, no sideways scroll', async ({ page }) => {
     await load(page);
     await fresh(page, 'easy');
@@ -105,7 +84,7 @@ test.describe('layout', () => {
     // Nearly full width on phones; on wide screens the app is capped at ~520px.
     // On very short screens the two-row number pad claims height, so allow a smaller board.
     const short = await page.evaluate(() => innerHeight < 600);
-    expect(w).toBeGreaterThanOrEqual(short ? 260 : Math.min(vw * 0.9, 440));
+    expect(w).toBeGreaterThanOrEqual(short ? 280 : Math.min(vw * 0.9, 440));
   });
 
   test('every control is a comfortable tap target', async ({ page }) => {

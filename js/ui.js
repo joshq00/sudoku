@@ -108,6 +108,3 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') menuOpen(false);
 });
 $('#trim').addEventListener('click', () => menuOpen(false));
-
-// Hint button under the number pad: same action as the ? in the header.
-$('#hint2').addEventListener('click', () => $('#hint').click());
