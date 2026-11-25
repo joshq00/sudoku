@@ -77,6 +77,18 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:var(--btn);
 html{-webkit-text-size-adjust:100%}body{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 #pz{min-height:32px;padding:6px 12px!important}.opts label{padding:8px 4px}
 @media (max-width:420px){.app{padding:10px}}
+/* fit-to-screen layout: no page scroll, board sized by available height */
+:root{padding:0!important}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+.app{height:100vh;height:100dvh;margin:0 auto;gap:6px;padding:calc(6px + env(safe-area-inset-top,0px)) 10px calc(6px + env(safe-area-inset-bottom,0px));overflow-y:auto}
+.app>*{flex:none}
+h1{font-size:22px}.seg button{padding:5px 12px;min-height:34px}
+#board{width:min(100%,max(220px,calc(100dvh - 330px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))));align-self:center}
+#msg{display:block;flex:1 1 auto;height:auto;min-height:40px;max-height:80px;overflow-y:auto;padding:2px 4px;font-size:12.5px;line-height:1.3}
+.tools button{height:46px}.tools+.tools button{height:36px}
+#pad{order:1}.tools+.tools{order:2}.det{order:3}
+#pad button{padding:6px 0}
+.det summary{padding:6px;cursor:pointer;text-align:center;font:13px system-ui,sans-serif;color:var(--mut)}
 .n .m,.c.ht .n .m{background:color-mix(in srgb,var(--user) 14%,transparent);color:var(--user);font-weight:700;border-radius:3px}
 </style></head><body>
 <div class="app">
@@ -98,11 +110,11 @@ html{-webkit-text-size-adjust:100%}body{touch-action:manipulation;-webkit-tap-hi
   <button id="new" style="flex-direction:row;justify-content:center;gap:8px">↻ New game</button>
  </div>
  <div id="pad"></div>
- <div class="opts">
+ <details class="det"><summary>Settings</summary><div class="opts">
   <label><input type="checkbox" id="oErr" checked> Show errors</label>
   <label><input type="checkbox" id="oClean" checked> Auto-clean notes</label>
   <label><input type="checkbox" id="oPeer" checked> Highlight row/column/box</label>
-  <label><input type="checkbox" id="oTint" checked> Highlight matching notes</label>
+  <label><input type="checkbox" id="oTint" checked> Highlight matching notes</label></div></details><div hidden>
  </div>
 </div>
 <div id="ov"><div class="card"><h2>Solved!</h2><p id="ovt"></p><button class="pri" id="ovn">Play again</button><button id="ovc">Close</button></div></div>
