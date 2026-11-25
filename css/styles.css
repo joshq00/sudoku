@@ -663,7 +663,7 @@ h1 {
     max(
       220px,
       calc(
-        100dvh - 178px - 2 * var(--pad-h) - env(safe-area-inset-top, 0px) -
+        100dvh - var(--chrome) - 2 * var(--pad-h) - env(safe-area-inset-top, 0px) -
           env(safe-area-inset-bottom, 0px)
       )
     )
@@ -769,4 +769,59 @@ h1 {
 /* Pad button height scales with the screen; the board's height budget uses it too. */
 :root {
   --pad-h: clamp(42px, 6.5dvh, 56px);
+}
+
+/* Second hint button under the number pad, easy to reach with a thumb. */
+.hintbar {
+  width: 100%;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.hintbar b {
+  font:
+    700 18px Georgia,
+    serif;
+}
+
+/* Size digits and notes from the board's own width (container units) and let
+   the grid rows shrink, so a short screen can never make the board taller
+   than it is wide. */
+#board {
+  container-type: inline-size;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-rows: repeat(9, minmax(0, 1fr));
+}
+.c {
+  min-height: 0;
+  overflow: hidden;
+  line-height: 1;
+  font-size: clamp(14px, 6.2cqw, 34px);
+}
+.n {
+  font-size: clamp(7px, 2.3cqw, 12px);
+}
+
+/* Space taken by everything except the board and the pad rows. */
+:root {
+  --chrome: 224px;
+}
+@media (max-height: 600px) {
+  :root {
+    --chrome: 196px;
+  }
+  .tools button {
+    height: 40px;
+  }
+  .hintbar {
+    height: 34px;
+  }
+  #msg {
+    min-height: 30px;
+    font-size: 12px;
+  }
 }
