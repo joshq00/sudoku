@@ -42,6 +42,16 @@ test.describe('layout', () => {
     expect(m.toolsBottom).toBeGreaterThan(m.boardBottom);
   });
 
+  test('the hint message sits underneath the buttons', async ({ page }) => {
+    await load(page);
+    const m = await page.evaluate(() => {
+      const r = (s) => document.querySelector(s).getBoundingClientRect();
+      return { padBottom: r('#pad').bottom, msgTop: r('#msg').top, toolsTop: r('.tools').top };
+    });
+    expect(m.msgTop).toBeGreaterThanOrEqual(m.padBottom - 1);
+    expect(m.toolsTop).toBeLessThan(m.padBottom);
+  });
+
   test('fits the screen: nothing hidden, no page scroll, no sideways scroll', async ({ page }) => {
     await load(page);
     await fresh(page, 'easy');
