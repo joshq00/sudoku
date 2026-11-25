@@ -12,8 +12,10 @@ permissions:
   pages: write
   id-token: write
 
+# Tests: a newer push to the same branch cancels the older test run.
+# (The deploy job below has its own, non-cancelling queue.)
 concurrency:
-  group: pages
+  group: tests-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -32,11 +34,16 @@ jobs:
 
   deploy:
     needs: test
+    # Pages accepts one deployment at a time. Queue deploys instead of cancelling a
+    # running one (cancelling mid-deploy is what makes the next request fail).
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       # Publish only the files the site needs (not node_modules, tests, ...).
@@ -51,4 +58,11 @@ jobs:
         with:
           path: _site
       - id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true # a conflicting deployment is retried below
+      - name: Wait, then retry the deployment once
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 45
+      - id: deployment_retry
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
