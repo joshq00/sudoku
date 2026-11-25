@@ -662,7 +662,10 @@ h1 {
     100%,
     max(
       220px,
-      calc(100dvh - 216px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))
+      calc(
+        100dvh - 178px - 2 * var(--pad-h) - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      )
     )
   );
 }
@@ -743,4 +746,27 @@ h1 {
   overflow-y: auto;
   padding: 4px 6px;
   text-align: center;
+}
+
+/* Number pad: two rows (1-5, then 6-9 centred), large tap targets.
+   A 10-column grid with 2-column buttons lets the second row sit centred. */
+#pad {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+}
+#pad button {
+  grid-column: span 2;
+  height: var(--pad-h);
+  padding: 0;
+  border-radius: 12px;
+  font-size: clamp(26px, 8vw, 34px);
+}
+#pad button:nth-child(6) {
+  grid-column: 2 / span 2;
+}
+
+/* Pad button height scales with the screen; the board's height budget uses it too. */
+:root {
+  --pad-h: clamp(42px, 6.5dvh, 56px);
 }

@@ -82,7 +82,9 @@ test.describe('layout', () => {
       vw: innerWidth,
     }));
     // Nearly full width on phones; on wide screens the app is capped at ~520px.
-    expect(w).toBeGreaterThanOrEqual(Math.min(vw * 0.9, 440));
+    // On very short screens the two-row number pad claims height, so allow a smaller board.
+    const short = await page.evaluate(() => innerHeight < 600);
+    expect(w).toBeGreaterThanOrEqual(short ? 280 : Math.min(vw * 0.9, 440));
   });
 
   test('every control is a comfortable tap target', async ({ page }) => {
