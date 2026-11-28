@@ -70,19 +70,83 @@ function start({ sol, puz, seed }) {
     t: 0,
     done: false,
   };
-  sel = puz.findIndex((v) => !v);
+  begin(puz.findIndex((v) => !v));
+}
+
+// ---- Saving and resuming ----
+// The whole game (board, notes, undo history, timer) is saved to localStorage after every
+// change, so closing the app and coming back picks up exactly where you left off.
+const SAVE_KEY = 'game';
+const SAVE_VERSION = 1;
+const HIST_KEPT = 60; // undo steps stored; older ones are dropped to keep the save small
+
+/** Writes the current game to localStorage (silently does nothing if storage is blocked). */
+function saveGame() {
+  if (!S || !S.sol) return;
+  if (S.done) {
+    store.set(SAVE_KEY, null); // a finished puzzle is not resumed
+    return;
+  }
+  store.set(SAVE_KEY, {
+    v: SAVE_VERSION,
+    noteMode,
+    game: { ...S, hist: S.hist.slice(-HIST_KEPT), redo: S.redo.slice(-HIST_KEPT) },
+  });
+}
+
+/** True when `g` looks like a complete, untampered saved game. */
+function validSave(g) {
+  const nine1 = (a, max) =>
+    Array.isArray(a) &&
+    a.length === 81 &&
+    a.every((x) => Number.isInteger(x) && x >= 0 && x <= max);
+  return (
+    g &&
+    typeof g.seed === 'string' &&
+    nine1(g.sol, 9) &&
+    nine1(g.vals, 9) &&
+    nine1(g.notes, 0x3fe) &&
+    nine1(g.elim, 0x3fe) &&
+    Array.isArray(g.given) &&
+    g.given.length === 81 &&
+    Array.isArray(g.hist) &&
+    Array.isArray(g.redo) &&
+    Number.isFinite(g.t) &&
+    !g.done
+  );
+}
+
+/**
+ * Restores the saved game, if there is a valid one. Returns true if it did.
+ * Pass `onlySeed` to resume only when the saved puzzle has that seed.
+ */
+function resumeGame(onlySeed) {
+  const saved = store.get(SAVE_KEY, null);
+  if (!saved || saved.v !== SAVE_VERSION || !validSave(saved.game)) return false;
+  if (onlySeed && saved.game.seed !== onlySeed) return false;
+  S = saved.game;
+  setDiff(SEED_LEVELS[S.seed[0]] || 'medium'); // the seed's first letter is the difficulty
+  noteMode = !!saved.noteMode;
+  begin(S.vals.findIndex((v) => !v));
+  return true;
+}
+
+/** Shared by start() and resumeGame(): resets the UI around the current `S` and runs the timer. */
+function begin(firstSel) {
+  sel = firstSel;
   hintI = -1;
   paused = false;
   board.classList.remove('pause');
   $('#pz').innerHTML = ICON_PAUSE;
   $('#ov').classList.remove('show');
   msg('');
-  $('#seedText').textContent = seed;
+  $('#seedText').textContent = S.seed;
   clearInterval(tick);
   tick = setInterval(() => {
     if (!paused && !S.done) {
       S.t++;
       time();
+      if (S.t % 5 === 0) saveGame(); // keep the saved clock close to the real one
     }
   }, 1000);
   time();
@@ -136,6 +200,7 @@ function check() {
   if (S.vals.every((v, i) => v === S.sol[i])) {
     S.done = true;
     clearInterval(tick);
+    saveGame(); // clears the saved game: a finished puzzle is not resumed
     $('#ovt').textContent =
       `${diff[0].toUpperCase() + diff.slice(1)} in ${$('#tm').textContent} with ${S.mist} mistake${S.mist == 1 ? '' : 's'} and ${S.hints} hint${S.hints == 1 ? '' : 's'}.`;
     setTimeout(() => $('#ov').classList.add('show'), 350);
@@ -151,6 +216,7 @@ function wrong(i) {
 }
 
 function render() {
+  saveGame();
   const sv = sel >= 0 ? S.vals[sel] : 0,
     showErr = $('#oErr').checked;
   const gh = {};

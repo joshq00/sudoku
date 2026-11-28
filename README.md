@@ -19,6 +19,10 @@ No build step and no dependencies at runtime: plain HTML, CSS and JavaScript.
 - **Errors** are highlighted and counted. **Undo / redo** show what changed.
 - **Settings (gear):** light / dark / auto theme, error display, auto-clean, highlights.
   Preferences are saved in `localStorage`.
+- **Resumes where you left off:** the board, notes, undo history, timer and settings are saved in
+  `localStorage` after every move. Closing the app and reopening it restores the game; a solved
+  puzzle is not resumed. A `?seed=` link opens that puzzle (keeping your progress if it is the
+  one you were already on).
 - **Installable:** works as a home-screen app on iOS and Android and runs offline.
 
 ## Project layout
